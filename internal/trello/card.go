@@ -121,7 +121,7 @@ func (p *cardPost) Kind() string {
 		attachment := p.Attachments.Data[0]
 		if attachment.Type == "photo" {
 			return labels["Photo"]
-		} else if attachment.Type == "video_inline" {
+		} else if attachment.Type == "video_inline" || strings.Contains(attachment.Url, "youtube") {
 			return labels["Video"]
 		}
 		return labels["Link"]
