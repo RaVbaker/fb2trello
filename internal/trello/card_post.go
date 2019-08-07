@@ -46,20 +46,30 @@ func (p *cardPost) ExtractSharedLinks() (links []string) {
 			links = append(links, share.Link)
 		}
 	}
+
 	if len(p.Attachments.Data) > 0 {
-		if attachmentUrl := p.Attachments.Data[0].Url; len(attachmentUrl) > 0 {
-			parsedUrl, _ := url.Parse(attachmentUrl)
-			extractedFBLink := parsedUrl.Query()["u"]
-			if len(extractedFBLink) > 0 {
-				attachmentUrl = extractedFBLink[0]
-			}
-			if _, exist := exists[attachmentUrl]; !exist {
-				exists[attachmentUrl] = true
-				links = append(links, attachmentUrl)
+		for _, attachment := range p.Attachments.Data {
+			attachmentUrl := attachment.Url
+			if len(attachmentUrl) > 0 {
+				attachmentUrl = extractFbUrl(attachmentUrl, exists, links)
+				if _, exist := exists[attachmentUrl]; !exist {
+					exists[attachmentUrl] = true
+					links = append(links, attachmentUrl)
+				}
 			}
 		}
 	}
 	return
+}
+
+func extractFbUrl(attachmentUrl string, exists map[string]bool, links []string) string {
+	parsedUrl, _ := url.Parse(attachmentUrl)
+	extractedFBLink := parsedUrl.Query()["u"]
+	if len(extractedFBLink) > 0 {
+		attachmentUrl = extractedFBLink[0]
+	}
+
+	return attachmentUrl
 }
 
 func (p *cardPost) Kind() string {
