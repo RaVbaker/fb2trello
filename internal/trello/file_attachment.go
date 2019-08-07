@@ -28,7 +28,7 @@ func UploadAttachment(card *trello.Card, url string) *trello.Attachment {
 	defer resp.Body.Close()
 
 	postData := &bytes.Buffer{}
-	writer, err := constructMutlipartBody(url, postData, card, &resp.Body)
+	writer, err := constructMultipartBody(url, postData, card, &resp.Body)
 	if err != nil {
 		deleteCard(card)
 		log.Fatalf("card[%s] %s", card.ID, err.Error())
@@ -36,7 +36,7 @@ func UploadAttachment(card *trello.Card, url string) *trello.Attachment {
 	return createAttachmentUpload(card, postData, writer.FormDataContentType(), url)
 }
 
-func constructMutlipartBody(url string, postData *bytes.Buffer, card *trello.Card, respBody *io.ReadCloser) (*multipart.Writer, error) {
+func constructMultipartBody(url string, postData *bytes.Buffer, card *trello.Card, respBody *io.ReadCloser) (*multipart.Writer, error) {
 	basePath := path.Base(strings.Split(url, "?")[0])
 	writer := multipart.NewWriter(postData)
 	part, err := writer.CreateFormFile("file", basePath)
