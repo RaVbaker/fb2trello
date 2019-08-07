@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const (
@@ -14,6 +15,9 @@ const (
 )
 
 type JsonNextUrl struct {
+	Data []struct {
+		CreatedTime string `json:"created_time"`
+	} `json:"data"`
 	Paging struct {
 		Next string `json:"next"`
 	} `json:"paging"`
@@ -21,7 +25,7 @@ type JsonNextUrl struct {
 
 var archiveCounter int = 1
 
-func Archive(accessToken, pageName string) error {
+func Archive(accessToken, pageName, untilDate string) error {
 	err := prepareArchiveFolder()
 	fullUrl := fmt.Sprintf(url, pageName, accessToken)
 
@@ -33,6 +37,10 @@ func Archive(accessToken, pageName string) error {
 		err = json.Unmarshal(body, &nextLink)
 		if err != nil {
 			return err
+		}
+
+		if len(untilDate) > 0 && strings.Compare(nextLink.Data[0].CreatedTime, untilDate) < 0 {
+			break
 		}
 
 		archiveCounter++

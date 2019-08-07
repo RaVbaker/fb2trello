@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/adlio/trello"
+	"github.com/pkg/errors"
 )
 
 func UploadAttachment(card *trello.Card, url string) *trello.Attachment {
@@ -21,60 +22,81 @@ func UploadAttachment(card *trello.Card, url string) *trello.Attachment {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalf("cannot read attachment %s, details: %v", url, err)
+		deleteCard(card)
+		log.Fatalf("card[%s] cannot read attachment %s, details: %v", card.ID, url, err)
 	}
 	defer resp.Body.Close()
 
-	basePath := path.Base(strings.Split(url, "?")[0])
+	postData := &bytes.Buffer{}
+	writer, err := constructMutlipartBody(url, postData, card, &resp.Body)
+	if err != nil {
+		deleteCard(card)
+		log.Fatalf("card[%s] %s", card.ID, err.Error())
+	}
+	return createAttachmentUpload(card, postData, writer.FormDataContentType(), url)
+}
 
-	post := &bytes.Buffer{}
-	writer := multipart.NewWriter(post)
+func constructMutlipartBody(url string, postData *bytes.Buffer, card *trello.Card, respBody *io.ReadCloser) (*multipart.Writer, error) {
+	basePath := path.Base(strings.Split(url, "?")[0])
+	writer := multipart.NewWriter(postData)
 	part, err := writer.CreateFormFile("file", basePath)
 	if err != nil {
-		log.Fatalf("cannot write attachment %s - %s, details: %v", url, basePath, err)
+		return nil, errors.Wrapf(err, "cannot write attachment %s - %s", url, basePath)
 	}
-
-	_, err = io.Copy(part, resp.Body)
+	_, err = io.Copy(part, *respBody)
 	if err != nil {
-		log.Fatalf("cannot copy attachment %s, details: %v", basePath, err)
+		return nil, errors.Wrapf(err, "cannot copy attachment %s", basePath)
 	}
+	ext := imageExtension(basePath)
+	err = writer.WriteField("mimeType", mime.TypeByExtension(ext))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot write mimetype for %s [%s]", ext, url)
+	}
+	err = writer.Close()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Closing writer for %s", url)
+	}
+	return writer, nil
+}
 
+func imageExtension(basePath string) string {
 	ext := path.Ext(basePath)
 	if len(ext) < 2 {
 		ext = ".jpg" // default extension
 	}
-	err = writer.WriteField("mimeType", mime.TypeByExtension(ext))
-	if err != nil {
-		log.Fatalf("Cannot write mimetype for %s [%s], details %v", url, ext, err)
-	}
-	err = writer.Close()
-	if err != nil {
-		log.Fatalf("Closing writer for %s, details %v", url, err)
-	}
+	return ext
+}
 
+func createAttachmentUpload(card *trello.Card, postData *bytes.Buffer, contentType, url string) *trello.Attachment {
 	params := urlPath.Values{"key": {client.Key}, "token": {client.Token}}
 	callPath := strings.Join([]string{client.BaseURL, "cards", card.ID, "attachments"}, "/") + "?" + params.Encode()
-	req, err := http.NewRequest("POST", callPath, post)
+	req, err := http.NewRequest("POST", callPath, postData)
 	if err != nil {
-		log.Fatalf("Cannot make POST to upload attachment:%s, details %v", callPath, err)
+		deleteCard(card)
+		log.Fatalf("card[%s] Cannot make POST to upload attachment:%s, details %v", card.ID, callPath, err)
 	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Content-Type", contentType)
 	attachmentResp, err := client.Client.Do(req)
 	if err != nil {
-		log.Fatalf("HTTP request failure on %s, details %v", url, err)
+		deleteCard(card)
+		log.Fatalf("card[%s]  HTTP request failure on %s, details %v", card.ID, url, err)
 	}
 	defer attachmentResp.Body.Close()
+	return parseAttachmentResponse(attachmentResp, card, url)
+}
 
+func parseAttachmentResponse(attachmentResp *http.Response, card *trello.Card, url string) *trello.Attachment {
 	b, err := ioutil.ReadAll(attachmentResp.Body)
 	if err != nil {
-		log.Fatalf("HTTP Read error on response for %s, details %v", url, err)
+		deleteCard(card)
+		log.Fatalf("card[%s] HTTP Read error on response for %s, details %v", card.ID, url, err)
 	}
-
 	newAttachment := &trello.Attachment{}
 	decoder := json.NewDecoder(bytes.NewBuffer(b))
 	err = decoder.Decode(newAttachment)
 	if err != nil {
-		log.Fatalf("JSON decode failed on %s, details: %v:\n%s", url, err, string(b))
+		deleteCard(card)
+		log.Fatalf("card[%s] JSON decode failed on %s, details: %v:\n%s", card.ID, url, err, string(b))
 	}
 	return newAttachment
 }
