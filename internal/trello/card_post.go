@@ -1,6 +1,7 @@
 package trello
 
 import (
+	"math"
 	"net/url"
 	"path"
 	"strings"
@@ -11,7 +12,9 @@ import (
 type cardPost fb.Post
 
 func (p *cardPost) Name() string {
-	return strings.Join([]string{"FB Post", p.Message}, " - ")
+	name := strings.Join([]string{"FB Post", p.Message}, " - ")
+	limit := int(math.Min(float64(len(name)), 512))
+	return name[:limit]
 }
 
 func (p *cardPost) Desc() string {
