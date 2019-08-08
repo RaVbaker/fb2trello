@@ -21,7 +21,7 @@ func discoverExistingLabels(loadedLabels []*trello.Label) []int {
 	var availableLabels []int
 	for i, boardLabel := range loadedLabels {
 		if _, exists := labels[boardLabel.Name]; exists {
-			log.Printf("label[%s] found with name: `%v`", boardLabel.ID, boardLabel.Name)
+			log.Printf("Label[%s] found with name: `%v`", boardLabel.ID, boardLabel.Name)
 			labels[boardLabel.Name] = boardLabel.ID
 		} else if len(boardLabel.Name) == 0 {
 			availableLabels = append(availableLabels, i)

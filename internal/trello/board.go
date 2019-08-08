@@ -28,10 +28,11 @@ func makeLists(board *trello.Board, lists *[]string) {
 }
 
 func makeList(board *trello.Board, listName string) {
-	_, err := board.CreateList(listName, trello.Defaults())
+	_, err := board.CreateList(listName, trello.Arguments{"pos": "bottom"})
 	if err != nil {
 		log.Fatalf("Failed to create list[%s], details: %v", listName, err)
 	}
+	log.Printf("Creating new list %s", listName)
 }
 
 func makeBoard(board *trello.Board, boardName string) {
@@ -40,6 +41,7 @@ func makeBoard(board *trello.Board, boardName string) {
 	if err != nil {
 		log.Fatalf("Could not create board %s, details: %v", boardName, err)
 	}
+	log.Printf("Creating new board %s", boardName)
 }
 
 func getBoard(boardName string) *trello.Board {
