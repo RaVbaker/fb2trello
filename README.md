@@ -16,8 +16,11 @@ Usage of fb2trello:
         Facebook pageName/ID  which should get archived
   -setup
         If specified it will create whole structure in trello for board and lists
+  -since string
+        Archive since date - oldest post publication date, e.g. 2019-07-30
   -until string
-        Archive until date - oldest post publication date, e.g. 2019-07-30
+        Archive until date - newest post publication date, e.g. 2019-10-30
+
 ``` 
 
 Additionally if `-page` argument is provided API  `FACEBOOK_ACCESS_TOKEN` is needed.

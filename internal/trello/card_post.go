@@ -13,15 +13,19 @@ type cardPost fb.Post
 
 func (p *cardPost) Name() string {
 	name := strings.Join([]string{"FB Post", p.Message}, " - ")
-	limit := int(math.Min(float64(len(name)), 512))
-	return name[:limit]
+	asRunes := []rune(name)
+	limit := int(math.Min(float64(len(asRunes)), 512))
+	return string(asRunes[:limit])
 }
 
 func (p *cardPost) Desc() string {
 	var attachmentContent string
 	if len(p.Attachments.Data) > 0 {
 		attachment := p.Attachments.Data[0]
-		attachmentContent = attachment.Title + "\n" + attachment.Description
+		attachmentContent = attachment.Title + "\n"
+		if !strings.Contains(p.Message, attachment.Description) {
+			attachmentContent += attachment.Description
+		}
 	}
 	links := p.ExtractSharedLinks()
 	content := []string{

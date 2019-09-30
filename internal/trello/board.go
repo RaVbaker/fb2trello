@@ -58,11 +58,8 @@ func getBoard(boardName string) *trello.Board {
 }
 
 func getList(board *trello.Board, listName string) *trello.List {
-	var lists = board.Lists
-	if len(lists) == 0 {
-		lists = getLists(board)
-	}
-
+	lists := getLists(board)
+	
 	for _, list := range lists {
 		if list.Name == listName {
 			return list

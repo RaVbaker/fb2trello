@@ -18,14 +18,18 @@ var labels = map[string]string{
 	"Link":  "",
 }
 
-func StoreCards(boardName, listName, untilDate string, posts []fb.Post) {
+func StoreCards(boardName, listName, sinceDate, untilDate string, posts []fb.Post) {
 	loadBoardDetails(boardName, listName)
 
 	var counter uint
 	for _, post := range posts {
-		if len(untilDate) > 0 && strings.Compare(post.CreatedTime, untilDate) < 0 {
+		if len(untilDate) > 0 && strings.Compare(post.CreatedTime, untilDate) > 0 {
+			continue
+		}
+		if len(sinceDate) > 0 && strings.Compare(post.CreatedTime, sinceDate) < 0 {
 			break
 		}
+		
 		cardFromPost(&post)
 		counter++
 	}
@@ -37,4 +41,5 @@ func loadBoardDetails(boardName, listName string) {
 	list = getList(board, listName)
 	prepareLabels()
 	log.Printf("Board[%s] `%s` ready: %s", board.ID, board.Name, board.URL)
+	log.Printf("List[%s] `%s` has been chosen", list.ID, list.Name)
 }

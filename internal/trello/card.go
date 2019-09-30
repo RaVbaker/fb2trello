@@ -66,7 +66,7 @@ func makeCard(postDetails *cardPost) *trello.Card {
 	}
 	err := list.AddCard(card, trello.Defaults())
 	if err != nil || len(card.ID) == 0 {
-		log.Fatalf("Couldn't add card[%s] `%s`, details: %v", card.ID, card.Name, err)
+		log.Fatalf("Couldn't add card[%s] `%s`, `%s`; details: %v", card.ID, card.Name, card.Desc, err)
 	}
 	// setting due and idLabels works only on Update, not on creation
 	err = card.Update(trello.Arguments{"due": postDetails.CreatedTime, "dueComplete": "true", "idLabels": postDetails.Kind()})
